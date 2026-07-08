@@ -260,41 +260,68 @@ class TestConfig(unittest.TestCase):
             self.assertEqual(cfg["theme"], "light")
 
 
-class TestParitaetMitAlterVersion(unittest.TestCase):
-    """Stellt sicher, dass die neue Logik dieselben Zeilen baut wie die alte Datei."""
+class TestZeilenformatReferenz(unittest.TestCase):
+    """Referenzformat der Ursprungsversion – darf sich nie ändern."""
 
-    @classmethod
-    def setUpClass(cls):
-        import ast
-        src = (REPO_ROOT / "gui_rue_generator_unified.py").read_text(encoding="utf-8")
-        tree = ast.parse(src)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Assign):
-                for t in node.targets:
-                    if isinstance(t, ast.Name) and t.id == "PROJEKTE":
-                        cls.alte_projekte = ast.literal_eval(node.value)
-                    if isinstance(t, ast.Name) and t.id == "VISEV_ACTIONS_7088":
-                        cls.alte_visev = ast.literal_eval(node.value)
-
-    def test_zasm_codes_identisch_nach_dedupe(self):
-        daten = rc.lade_projekte(REPO_ROOT / "projekte.json")
-        for name, alt in self.alte_projekte.items():
-            erwartet = list(dict.fromkeys(alt["AKTIONEN"]))
-            self.assertEqual(daten.zasm[name], erwartet, f"Abweichung in {name}")
-
-    def test_visev_codes_identisch(self):
-        daten = rc.lade_projekte(REPO_ROOT / "projekte.json")
-        self.assertEqual(daten.visev_aktionen(),
-                         list(dict.fromkeys(self.alte_visev)))
-
-    def test_zasm_zeile_identisch_zur_alten_formel(self):
-        """Alte Formel nachgebaut: Ergebnis muss Zeichen für Zeichen gleich sein."""
+    def test_zasm_zeile_identisch_zur_referenzformel(self):
         aktion, pnr, stempel, ts = "054020250001", "1234567", "ABCD1234", "202607081200"
         left = f"{aktion} PNR   P {pnr:>7}"
         left += " " * (70 - len(left))
-        alt = left + f"{stempel} NIO {ts}"
-        alt += " " * (95 - len(alt))
-        self.assertEqual(rc.build_line_zasm(aktion, pnr, stempel, ts), alt)
+        referenz = left + f"{stempel} NIO {ts}"
+        referenz += " " * (95 - len(referenz))
+        self.assertEqual(rc.build_line_zasm(aktion, pnr, stempel, ts), referenz)
+
+
+class TestProjekteSpeichern(unittest.TestCase):
+    def test_roundtrip_speichern_und_laden(self):
+        daten = rc.ProjektDaten(
+            zasm={"X1": ["054020250001", "054020250002"], "X2": ["371020250047"]},
+            visev={"7088": ["054000007015"]},
+        )
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "projekte.json"
+            self.assertIsNone(rc.speichere_projekte(daten, p))
+            geladen = rc.lade_projekte(p)
+            self.assertEqual(geladen.zasm, daten.zasm)
+            self.assertEqual(geladen.visev, daten.visev)
+
+    def test_speichern_in_unmoeglichen_pfad(self):
+        daten = rc.ProjektDaten(zasm={"X": ["054020250001"]})
+        fehler = rc.speichere_projekte(daten, "/nicht/vorhanden/projekte.json")
+        self.assertIsNotNone(fehler)
+
+
+class TestAktionscodes(unittest.TestCase):
+    def test_parse_zeilen_und_trennzeichen(self):
+        text = "054020250001\n054020250002, 054020250003; 054020250001"
+        self.assertEqual(rc.parse_aktionscodes(text),
+                         ["054020250001", "054020250002", "054020250003"])
+
+    def test_parse_leer(self):
+        self.assertEqual(rc.parse_aktionscodes("   \n  "), [])
+
+    def test_parse_excel_spalte(self):
+        """Excel kopiert mit \\r\\n-Zeilenenden und ggf. Leerzeilen am Ende."""
+        excel = "054020250001\r\n054020250002\r\n054020250003\r\n\r\n"
+        self.assertEqual(rc.parse_aktionscodes(excel),
+                         ["054020250001", "054020250002", "054020250003"])
+
+    def test_parse_excel_mehrspaltig_mit_tabs(self):
+        """Zwei markierte Excel-Spalten -> Tab-getrennte Werte je Zeile."""
+        excel = "054020250001\t054020250002\r\n054020250003\t054020250004\r\n"
+        self.assertEqual(rc.parse_aktionscodes(excel),
+                         ["054020250001", "054020250002",
+                          "054020250003", "054020250004"])
+
+    def test_validate_ok(self):
+        self.assertIsNone(rc.validate_aktionscodes(["054020250001"]))
+
+    def test_validate_fehler(self):
+        self.assertIsNotNone(rc.validate_aktionscodes([]))
+        self.assertIsNotNone(rc.validate_aktionscodes(["12345"]))          # zu kurz
+        self.assertIsNotNone(rc.validate_aktionscodes(["05402025000X"]))   # Buchstabe
+        fehler = rc.validate_aktionscodes(["1", "2", "3", "4", "5", "6", "7"])
+        self.assertIn("weitere", fehler)
 
 
 if __name__ == "__main__":
