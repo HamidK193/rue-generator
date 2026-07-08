@@ -4,7 +4,7 @@
   "ts_mode": "live",
   "ts_manual": "",
   "stempel": "XXXXXXXX",
-  "geometry": "958x1000+953+0",
+  "geometry": "1020x760+120+80",
   "visev_header": false,
-  "theme": "light"
+  "visev_keep_dupes": true
 }
