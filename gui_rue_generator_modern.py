@@ -31,22 +31,30 @@ import rue_core as core
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
-# ---------- Farbpalette (Konzept B, hell) ----------
-BG      = "#eef1f4"   # App-Hintergrund
-PANEL   = "#ffffff"   # Karten / Eingabepanel
-FIELD   = "#f7f9fb"   # Eingabefelder
-LINE    = "#dbe2e8"   # Rahmen
-INK     = "#1d2b36"   # Text
-MUT     = "#64707c"   # gedämpfter Text
-ACC     = "#2e7dd1"   # Akzent (Blau)
-ACC_DK  = "#2568b0"
-OK_TXT  = "#157a4f"   # Grün
-OK_BG   = "#e2f3ea"
-WARN_TXT = "#9a6700"
-WARN_BG  = "#fff2d5"
-SB_BG   = "#e7eef6"   # Statusleiste
-RED     = "#c4483f"
-RED_DK  = "#a93a32"
+# ---------- Farbpalette (Apple-artig, hell, mehrere Tonstufen) ----------
+BG      = "#f5f5f7"   # App-Hintergrund (Apple-Hellgrau)
+TOPBAR  = "#fbfbfd"   # Kopfleiste (fast weiß, eine Stufe heller)
+PANEL   = "#ffffff"   # Karten
+FIELD   = "#f2f2f7"   # Eingabefelder (iOS grouped background)
+SEC_BG  = "#eceef2"   # sekundäre (getönte) Buttons
+SEC_HOV = "#e2e4ea"
+LINE    = "#e5e5ea"   # Hairline-Trenner
+LINE_DK = "#d1d1d6"   # dunklere Trennlinie
+INK     = "#1d1d1f"   # Primärtext (Apple)
+MUT     = "#86868b"   # Sekundärtext (Apple)
+SB_TXT  = "#6e6e73"   # Statusleistentext
+ACC     = "#007aff"   # Systemblau
+ACC_DK  = "#0066d6"
+GREEN   = "#34c759"   # Systemgrün (Switches)
+OK_TXT  = "#248a3d"
+OK_BG   = "#e4f8ea"
+WARN_TXT = "#c77700"
+WARN_BG  = "#fff4e0"
+SB_BG   = "#eef0f6"   # Statusleiste
+SEL_BG  = "#e8f1fe"   # Auswahl in Listen (zartes Blau)
+RED_TXT = "#d70015"   # destruktiv (getönt)
+RED_BG  = "#fdeceb"
+RED_HOV = "#f9dcda"
 
 MONO = ("Consolas", 12)
 MONO_SMALL = ("Consolas", 11)
@@ -110,25 +118,26 @@ class RueApp(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        bar = ctk.CTkFrame(self, fg_color=PANEL, corner_radius=0, height=52)
+        bar = ctk.CTkFrame(self, fg_color=TOPBAR, corner_radius=0, height=54)
         bar.grid(row=0, column=0, sticky="ew")
         bar.grid_propagate(False)
         bar.grid_columnconfigure(3, weight=1)
 
-        mark = ctk.CTkLabel(bar, text="RÜ", width=32, height=32,
+        mark = ctk.CTkLabel(bar, text="RÜ", width=34, height=34,
                             fg_color=ACC, text_color="#ffffff",
-                            corner_radius=8,
+                            corner_radius=10,
                             font=ctk.CTkFont(size=13, weight="bold"))
-        mark.grid(row=0, column=0, padx=(14, 8), pady=10)
+        mark.grid(row=0, column=0, padx=(16, 9), pady=10)
         ctk.CTkLabel(bar, text="RÜ-Generator", text_color=INK,
                      font=ctk.CTkFont(size=15, weight="bold")).grid(
-            row=0, column=1, padx=(0, 20))
+            row=0, column=1, padx=(0, 22))
 
+        # iOS-artiger Segmentschalter: graue Wanne, weißes gewähltes Segment
         self.view_seg = ctk.CTkSegmentedButton(
             bar, values=["ZASM", "ViseV", "CPR-Aktionen"],
-            command=self._switch_view,
-            fg_color=BG, selected_color="#cfe3f8", selected_hover_color="#bcd7f2",
-            unselected_color=BG, unselected_hover_color=LINE,
+            command=self._switch_view, corner_radius=9, border_width=3,
+            fg_color=FIELD, selected_color=PANEL, selected_hover_color=PANEL,
+            unselected_color=FIELD, unselected_hover_color=SEC_HOV,
             text_color=INK, font=ctk.CTkFont(size=12, weight="bold"))
         self.view_seg.grid(row=0, column=2)
 
@@ -140,8 +149,10 @@ class RueApp(ctk.CTk):
         self.cpr_combo = ctk.CTkComboBox(
             self.cpr_box, variable=self.cpr_var,
             values=self._cpr_namen(), state="readonly", width=170,
-            fg_color=FIELD, border_color=LINE, button_color=ACC,
-            button_hover_color=ACC_DK, text_color=INK)
+            corner_radius=9, fg_color=PANEL, border_color=LINE_DK,
+            button_color=PANEL, button_hover_color=FIELD,
+            dropdown_fg_color=PANEL, dropdown_hover_color=SEL_BG,
+            dropdown_text_color=INK, text_color=INK)
         self.cpr_combo.pack(side="left")
 
         ctk.CTkFrame(self, fg_color=LINE, corner_radius=0, height=1).grid(
@@ -183,8 +194,10 @@ class RueApp(ctk.CTk):
     # Gemeinsame Bausteine
     # ==================================================================
     def _linkes_panel(self, page: ctk.CTkFrame) -> ctk.CTkFrame:
-        panel = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=0, width=330)
-        panel.grid(row=0, column=0, sticky="nsw")
+        """Linkes Eingabepanel als schwebende weiße Karte."""
+        panel = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=16, width=330,
+                             border_width=1, border_color=LINE)
+        panel.grid(row=0, column=0, sticky="nsw", padx=(14, 4), pady=12)
         panel.grid_propagate(False)
         page.grid_columnconfigure(1, weight=1)
         page.grid_rowconfigure(0, weight=1)
@@ -220,12 +233,12 @@ class RueApp(ctk.CTk):
         return kopf, fn, badge
 
     def _statusleiste(self, editor: ctk.CTkFrame):
-        sb = ctk.CTkFrame(editor, fg_color=SB_BG, corner_radius=0, height=32)
-        sb.pack(fill="x", side="bottom")
+        sb = ctk.CTkFrame(editor, fg_color=SB_BG, corner_radius=12, height=34)
+        sb.pack(fill="x", side="bottom", padx=16, pady=(0, 12))
         sb.pack_propagate(False)
-        links = ctk.CTkLabel(sb, text="", text_color="#3c536b", font=MONO_SMALL)
+        links = ctk.CTkLabel(sb, text="", text_color=SB_TXT, font=MONO_SMALL)
         links.pack(side="left", padx=14)
-        rechts = ctk.CTkLabel(sb, text="", text_color="#3c536b", font=MONO_SMALL)
+        rechts = ctk.CTkLabel(sb, text="", text_color=SB_TXT, font=MONO_SMALL)
         rechts.pack(side="right", padx=14)
         return links, rechts
 
@@ -288,47 +301,49 @@ class RueApp(ctk.CTk):
         self._panel_titel(panel, "Eingaben")
 
         self._feld_label(panel, f"Stempel ({core.STEMPEL_LEN} Zeichen)")
-        ctk.CTkEntry(panel, textvariable=self.stempel_var, font=MONO,
-                     fg_color=FIELD, border_color=LINE, text_color=INK).pack(
+        ctk.CTkEntry(panel, textvariable=self.stempel_var, font=MONO, height=34,
+                     corner_radius=9, border_width=0,
+                     fg_color=FIELD, text_color=INK).pack(
             fill="x", padx=16)
 
         self._feld_label(panel, "Zeitstempel")
         self.ts_seg = ctk.CTkSegmentedButton(
             panel, values=["Live", "Manuell"],
-            command=self._on_ts_seg,
-            fg_color=FIELD, selected_color="#cfe3f8", selected_hover_color="#bcd7f2",
-            unselected_color=FIELD, unselected_hover_color=LINE, text_color=INK)
+            command=self._on_ts_seg, corner_radius=9, border_width=3,
+            fg_color=FIELD, selected_color=PANEL, selected_hover_color=PANEL,
+            unselected_color=FIELD, unselected_hover_color=SEC_HOV,
+            text_color=INK)
         self.ts_seg.set("Manuell" if self.ts_mode_var.get() == "manual" else "Live")
         self.ts_seg.pack(fill="x", padx=16)
         self.ts_entry = ctk.CTkEntry(
-            panel, textvariable=self.ts_manual_var, font=MONO,
-            placeholder_text="YYYYMMDDhhmm",
-            fg_color=FIELD, border_color=LINE, text_color=INK)
+            panel, textvariable=self.ts_manual_var, font=MONO, height=34,
+            corner_radius=9, border_width=0, placeholder_text="YYYYMMDDhhmm",
+            fg_color=FIELD, text_color=INK)
         self.ts_entry.pack(fill="x", padx=16, pady=(6, 0))
 
         self._feld_label(panel, "PNRs (Einfügen aus Excel)")
         self.txt_pnrs = ctk.CTkTextbox(panel, wrap="none", font=MONO,
-                                       fg_color=FIELD, border_color=LINE,
-                                       border_width=1, text_color=INK)
+                                       corner_radius=10, border_width=0,
+                                       fg_color=FIELD, text_color=INK)
         self.txt_pnrs.pack(fill="both", expand=True, padx=16, pady=(0, 10))
         self._bind_textbox(self.txt_pnrs, self.update_preview_zasm)
 
         ctk.CTkSwitch(panel, text="Doppelte PNRs entfernen",
                       variable=self.dedupe_var,
-                      progress_color=ACC, text_color=INK).pack(
+                      progress_color=GREEN, text_color=INK).pack(
             anchor="w", padx=16, pady=(0, 12))
 
         ctk.CTkButton(panel, text="⬇  TXT generieren", height=40,
-                      fg_color=ACC, hover_color=ACC_DK,
+                      corner_radius=12, fg_color=ACC, hover_color=ACC_DK,
                       font=ctk.CTkFont(size=13, weight="bold"),
                       command=self.export_txt_zasm).pack(fill="x", padx=16)
         ctk.CTkButton(panel, text="Downloads öffnen", height=32,
-                      fg_color="transparent", hover_color=BG,
-                      border_width=1, border_color=LINE, text_color=MUT,
+                      corner_radius=10, fg_color=SEC_BG, hover_color=SEC_HOV,
+                      text_color=ACC,
                       command=self.open_downloads).pack(fill="x", padx=16, pady=8)
         ctk.CTkButton(panel, text="Eingabe leeren", height=28,
-                      fg_color="transparent", hover_color=BG,
-                      border_width=1, border_color=LINE, text_color=MUT,
+                      corner_radius=10, fg_color=SEC_BG, hover_color=SEC_HOV,
+                      text_color=INK,
                       command=self.clear_zasm).pack(fill="x", padx=16, pady=(0, 16))
 
         # Editor rechts
@@ -336,14 +351,14 @@ class RueApp(ctk.CTk):
         editor.grid(row=0, column=1, sticky="nsew")
         _, self.fn_zasm, self.badge_zasm = self._editorkopf(editor)
         ctk.CTkButton(editor.winfo_children()[0], text="⧉ Kopieren", width=100,
-                      fg_color="transparent", hover_color=BG,
-                      border_width=1, border_color=LINE, text_color=MUT,
+                      corner_radius=10, fg_color=SEC_BG, hover_color=SEC_HOV,
+                      text_color=ACC,
                       command=self.copy_preview_zasm).pack(side="right")
         self.sb_zasm_l, self.sb_zasm_r = self._statusleiste(editor)
         self.preview_zasm = ctk.CTkTextbox(
             editor, wrap="none", font=MONO, state="disabled",
             fg_color=PANEL, border_color=LINE, border_width=1,
-            text_color=INK, corner_radius=8)
+            text_color=INK, corner_radius=12)
         self.preview_zasm.pack(fill="both", expand=True, padx=16, pady=(0, 12))
 
     def _on_ts_seg(self, wert: str) -> None:
@@ -443,47 +458,47 @@ class RueApp(ctk.CTk):
 
         self._feld_label(panel, "VINs (Einfügen aus Excel)")
         self.txt_vins = ctk.CTkTextbox(panel, wrap="none", font=MONO,
-                                       fg_color=FIELD, border_color=LINE,
-                                       border_width=1, text_color=INK)
+                                       corner_radius=10, border_width=0,
+                                       fg_color=FIELD, text_color=INK)
         self.txt_vins.pack(fill="both", expand=True, padx=16, pady=(0, 10))
         self._bind_textbox(self.txt_vins, self.update_preview_visev)
 
         ctk.CTkSwitch(panel, text="Header ausgeben",
                       variable=self.visev_header_var,
                       command=self.update_preview_visev,
-                      progress_color=ACC, text_color=INK).pack(
+                      progress_color=GREEN, text_color=INK).pack(
             anchor="w", padx=16, pady=(0, 6))
         ctk.CTkSwitch(panel, text="VIN-Duplikate beibehalten",
                       variable=self.visev_keep_dupes_var,
                       command=self.update_preview_visev,
-                      progress_color=ACC, text_color=INK).pack(
+                      progress_color=GREEN, text_color=INK).pack(
             anchor="w", padx=16, pady=(0, 12))
 
         ctk.CTkButton(panel, text="⬇  TXT generieren", height=40,
-                      fg_color=ACC, hover_color=ACC_DK,
+                      corner_radius=12, fg_color=ACC, hover_color=ACC_DK,
                       font=ctk.CTkFont(size=13, weight="bold"),
                       command=self.export_txt_visev).pack(fill="x", padx=16)
         ctk.CTkButton(panel, text="Downloads öffnen", height=32,
-                      fg_color="transparent", hover_color=BG,
-                      border_width=1, border_color=LINE, text_color=MUT,
+                      corner_radius=10, fg_color=SEC_BG, hover_color=SEC_HOV,
+                      text_color=ACC,
                       command=self.open_downloads).pack(fill="x", padx=16, pady=8)
         ctk.CTkButton(panel, text="Eingabe leeren", height=28,
-                      fg_color="transparent", hover_color=BG,
-                      border_width=1, border_color=LINE, text_color=MUT,
+                      corner_radius=10, fg_color=SEC_BG, hover_color=SEC_HOV,
+                      text_color=INK,
                       command=self.clear_visev).pack(fill="x", padx=16, pady=(0, 16))
 
         editor = ctk.CTkFrame(page, fg_color=BG, corner_radius=0)
         editor.grid(row=0, column=1, sticky="nsew")
         _, self.fn_visev, self.badge_visev = self._editorkopf(editor)
         ctk.CTkButton(editor.winfo_children()[0], text="⧉ Kopieren", width=100,
-                      fg_color="transparent", hover_color=BG,
-                      border_width=1, border_color=LINE, text_color=MUT,
+                      corner_radius=10, fg_color=SEC_BG, hover_color=SEC_HOV,
+                      text_color=ACC,
                       command=self.copy_preview_visev).pack(side="right")
         self.sb_visev_l, self.sb_visev_r = self._statusleiste(editor)
         self.preview_visev = ctk.CTkTextbox(
             editor, wrap="none", font=MONO, state="disabled",
             fg_color=PANEL, border_color=LINE, border_width=1,
-            text_color=INK, corner_radius=8)
+            text_color=INK, corner_radius=12)
         self.preview_visev.pack(fill="both", expand=True, padx=16, pady=(0, 12))
 
     def _visev_lines(self) -> tuple[list[str], int]:
@@ -537,7 +552,7 @@ class RueApp(ctk.CTk):
 
         self._panel_titel(panel, "CPR-Aktionen")
         ctk.CTkButton(panel, text="+ Neue CPR-Aktion", height=34,
-                      fg_color=ACC, hover_color=ACC_DK,
+                      corner_radius=10, fg_color=ACC, hover_color=ACC_DK,
                       font=ctk.CTkFont(size=12, weight="bold"),
                       command=self._edit_neu).pack(fill="x", padx=16, pady=(4, 8))
         self.edit_liste = ctk.CTkScrollableFrame(panel, fg_color=PANEL,
@@ -547,7 +562,7 @@ class RueApp(ctk.CTk):
         # Rechte Seite: Editor-Karte
         rechts = ctk.CTkFrame(page, fg_color=BG, corner_radius=0)
         rechts.grid(row=0, column=1, sticky="nsew")
-        karte = ctk.CTkFrame(rechts, fg_color=PANEL, corner_radius=10,
+        karte = ctk.CTkFrame(rechts, fg_color=PANEL, corner_radius=16,
                              border_width=1, border_color=LINE)
         karte.pack(fill="both", expand=True, padx=16, pady=14)
 
@@ -564,9 +579,9 @@ class RueApp(ctk.CTk):
         zeile = ctk.CTkFrame(karte, fg_color="transparent")
         zeile.pack(fill="x", padx=18, pady=(6, 0))
         ctk.CTkLabel(zeile, text="Name:", text_color=MUT).pack(side="left")
-        self.edit_name = ctk.CTkEntry(zeile, width=220, font=MONO,
-                                      fg_color=FIELD, border_color=LINE,
-                                      text_color=INK)
+        self.edit_name = ctk.CTkEntry(zeile, width=220, font=MONO, height=34,
+                                      corner_radius=9, border_width=0,
+                                      fg_color=FIELD, text_color=INK)
         self.edit_name.pack(side="left", padx=10)
         self.edit_anzahl = ctk.CTkLabel(zeile, text="", text_color=MUT)
         self.edit_anzahl.pack(side="left", padx=10)
@@ -574,8 +589,8 @@ class RueApp(ctk.CTk):
         ctk.CTkLabel(karte, text="Aktionscodes (einer je Zeile, 12 Ziffern):",
                      text_color=MUT, anchor="w").pack(fill="x", padx=18, pady=(12, 2))
         self.edit_codes = ctk.CTkTextbox(karte, wrap="none", font=MONO,
-                                         fg_color=FIELD, border_color=LINE,
-                                         border_width=1, text_color=INK)
+                                         corner_radius=10, border_width=0,
+                                         fg_color=FIELD, text_color=INK)
         self.edit_codes.pack(fill="both", expand=True, padx=18, pady=(0, 10))
         self.edit_codes.bind("<KeyRelease>", lambda e: self._edit_zaehler())
         self.edit_codes.bind("<<Paste>>", lambda e: self.after(1, self._edit_zaehler))
@@ -584,14 +599,14 @@ class RueApp(ctk.CTk):
         knopfzeile.pack(fill="x", padx=18, pady=(0, 14))
         self.edit_speichern_btn = ctk.CTkButton(
             knopfzeile, text="💾  Speichern", height=36, width=160,
-            fg_color=ACC, hover_color=ACC_DK,
+            corner_radius=12, fg_color=ACC, hover_color=ACC_DK,
             font=ctk.CTkFont(size=13, weight="bold"),
             command=self._edit_speichern)
         self.edit_speichern_btn.pack(side="left")
         self.edit_loeschen_btn = ctk.CTkButton(
             knopfzeile, text="🗑  Löschen", height=36, width=120,
-            fg_color=RED, hover_color=RED_DK,
-            command=self._edit_loeschen)
+            corner_radius=12, fg_color=RED_BG, hover_color=RED_HOV,
+            text_color=RED_TXT, command=self._edit_loeschen)
         self.edit_loeschen_btn.pack(side="left", padx=10)
         ctk.CTkLabel(
             knopfzeile,
@@ -612,10 +627,12 @@ class RueApp(ctk.CTk):
             ctk.CTkButton(
                 self.edit_liste,
                 text=f"{name}   ·   {anz} Codes",
-                anchor="w", height=32,
-                fg_color=ACC if aktiv else "transparent",
-                hover_color=ACC_DK if aktiv else BG,
-                text_color="#ffffff" if aktiv else INK,
+                anchor="w", height=32, corner_radius=9,
+                fg_color=SEL_BG if aktiv else "transparent",
+                hover_color=SEL_BG if aktiv else FIELD,
+                text_color=ACC if aktiv else INK,
+                font=ctk.CTkFont(size=12,
+                                 weight="bold" if aktiv else "normal"),
                 command=lambda n=name: self._edit_auswaehlen(n)).pack(
                 fill="x", pady=1)
 
