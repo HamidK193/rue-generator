@@ -310,6 +310,33 @@ def write_txt_crlf(path: str, lines: list[str]) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Fenstergeometrie
+# ---------------------------------------------------------------------------
+
+_GEOM_RE = re.compile(r"(\d+)x(\d+)([+-]\d+)([+-]\d+)")
+
+
+def clamp_geometry(geom: str, sw: int, sh: int,
+                   default_w: int = 1020, default_h: int = 760) -> str:
+    """
+    Erzwingt eine sichtbare Fensterposition (gegen 'Fenster off-screen'
+    nach Monitorwechsel). Erwartet geom wie '980x720+120+80'.
+    """
+    m = _GEOM_RE.match(str(geom).strip())
+    if not m:
+        w, h, x, y = default_w, default_h, 120, 80
+    else:
+        w, h = int(m.group(1)), int(m.group(2))
+        x, y = int(m.group(3)), int(m.group(4))
+
+    w = min(max(400, w), sw)
+    h = min(max(300, h), sh)
+    x = min(max(0, x), max(0, sw - w))
+    y = min(max(0, y), max(0, sh - h))
+    return f"{w}x{h}+{x}+{y}"
+
+
+# ---------------------------------------------------------------------------
 # Konfiguration
 # ---------------------------------------------------------------------------
 

@@ -206,6 +206,28 @@ class TestProjektDaten(unittest.TestCase):
         self.assertEqual(rc.resolve_project("gibtsnicht", daten2), "7042")
 
 
+class TestClampGeometry(unittest.TestCase):
+    def test_gueltige_geometrie_bleibt(self):
+        self.assertEqual(rc.clamp_geometry("980x720+120+80", 1920, 1080),
+                         "980x720+120+80")
+
+    def test_offscreen_wird_zurueckgeholt(self):
+        self.assertEqual(rc.clamp_geometry("980x720+5000+80", 1920, 1080),
+                         "980x720+940+80")
+
+    def test_negative_position(self):
+        self.assertEqual(rc.clamp_geometry("980x720-50-50", 1920, 1080),
+                         "980x720+0+0")
+
+    def test_unsinnige_eingabe_faellt_auf_default(self):
+        self.assertEqual(rc.clamp_geometry("kaputt", 1920, 1080),
+                         "1020x760+120+80")
+
+    def test_zu_gross_wird_begrenzt(self):
+        self.assertEqual(rc.clamp_geometry("4000x3000+0+0", 1920, 1080),
+                         "1920x1080+0+0")
+
+
 class TestConfig(unittest.TestCase):
     def test_fehlende_config_liefert_defaults(self):
         cfg, warn = rc.load_config("/nicht/vorhanden/config.json")
