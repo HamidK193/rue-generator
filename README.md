@@ -1,49 +1,48 @@
 # RÜ-Generator (ZASM & ViseV)
 
-Windows-Desktop-Tool mit grafischer Oberfläche zum Erzeugen von Textdateien
-für zwei Zielsysteme. Die Ausgabe landet standardmäßig im `Downloads`-Ordner.
-
-Es gibt zwei Varianten, die parallel nutzbar sind:
-
-| Variante | Dateien | UI |
-|---|---|---|
-| **Modern** (empfohlen) | `gui_rue_generator_modern.py` + `rue_core.py` + `projekte.json` | CustomTkinter, modernes Windows-Look & Feel |
-| Klassisch | `gui_rue_generator_unified.py` | Tkinter/ttk |
+Windows-Desktop-Tool mit moderner Oberfläche (Python + CustomTkinter) zum
+Erzeugen von Textdateien für zwei Zielsysteme. Die Ausgabe landet
+standardmäßig im `Downloads`-Ordner.
 
 ## Funktion
 
-Das Tool hat zwei Tabs:
+Das Tool hat drei Bereiche (Umschalter in der Kopfleiste):
 
 ### ZASM
-- Eingabe: eine Liste von PNRs + Auswahl eines Projekts.
-- Jede PNR wird mit allen im Projekt hinterlegten Aktionscodes kombiniert.
+- Eingabe: eine Liste von PNRs + Auswahl einer CPR-Aktion.
+- Jede PNR wird mit allen hinterlegten Aktionscodes kombiniert.
 - Ausgabe: feste **95-Zeichen-Zeilen** im Format
-  `<Aktion> PNR   P <PNR rechtsbündig>   <Stempel> NIO <Zeitstempel>`.
-- Optionen: Duplikate entfernen, Zeitstempel live oder manuell (`YYYYMMDDhhmm`).
+  `<Aktionscode> PNR   P <PNR rechtsbündig>   <Stempel> NIO <Zeitstempel>`.
+- Optionen: Duplikate entfernen, Zeitstempel live oder manuell
+  (`YYYYMMDDhhmm`, wird validiert).
 
 ### ViseV
-- Speziell für Projekt **7088**.
+- Fest für CPR-Aktion **7088**.
 - Eingabe: 17-stellige VINs.
-- Ausgabe pro VIN: `VIN-mitBindestrich<TAB>Aktion*` für alle Kampagnen-Aktionen.
-- Optionaler Header `VIN<TAB>Campaign Description`.
+- Ausgabe pro VIN: `VIN-mitBindestrich<TAB>Aktion*` für alle
+  Kampagnen-Aktionen; optionaler Header `VIN<TAB>Campaign Description`.
 
-## Projektdaten
+### CPR-Aktionen
+- CPR-Aktionen und ihre Aktionscodes direkt im Tool **anlegen, bearbeiten,
+  umbenennen und löschen** — ohne Code oder JSON anzufassen.
+- Änderungen werden sofort in `projekte.json` gespeichert.
+- Details: siehe **[ANLEITUNG.md](ANLEITUNG.md)**.
 
-**Moderne Version:** Die Projekte und ihre Aktionscodes liegen in
-`projekte.json` (Block `zasm` je Projekt, Block `visev` für Projekt 7088).
-Neue Codes einfach dort eintragen – Duplikate werden beim Laden automatisch
-entfernt. Bei der EXE gilt: Eine `projekte.json` **neben der EXE** hat
-Vorrang vor der eingebetteten Kopie, Datenpflege geht also ohne Neubau.
+## Dateien
 
-**Klassische Version:** Dictionary `PROJEKTE` in
-`gui_rue_generator_unified.py`.
+| Datei | Zweck |
+|---|---|
+| `gui_rue_generator_modern.py` | Oberfläche (CustomTkinter) |
+| `rue_core.py` | Kernlogik (Parsing, Zeilenbau, Validierung, Dateien) |
+| `projekte.json` | Alle CPR-Aktionen + ViseV-Kampagnen (im Tool pflegbar) |
+| `ANLEITUNG.md` | Pflege- und Anpassungs-Anleitung |
+| `tests/` | Unit-Tests der Kernlogik |
+| `gui_rue_generator_modern.spec` | PyInstaller-Konfiguration für die EXE |
 
 ## Starten
 
-Moderne Version:
-
 ```bat
-start_rue_tool_modern.bat
+start_rue_tool.bat
 ```
 
 oder direkt:
@@ -53,38 +52,25 @@ pip install -r requirements.txt
 python gui_rue_generator_modern.py
 ```
 
-Klassische Version (nur Tkinter, keine Zusatzpakete):
-
-```bat
-start_rue_tool.bat
-```
-
 Voraussetzung: Python 3.10+ mit Tkinter (bei Standard-Windows-Installationen
-dabei); die moderne Version braucht zusätzlich `customtkinter`.
+dabei) und `customtkinter`.
+
+## Konfiguration
+
+Beim Schließen wird eine lokale `config.json` erzeugt (gemerkte CPR-Aktion,
+Stempel, Schalter, Fensterposition). Diese Datei ist **nicht** im Repo
+enthalten (siehe `.gitignore`), weil sie den Stempel enthält. Als Vorlage
+dient `config.example.json`.
 
 ## Tests
-
-Die Kernlogik (Parsing, Zeilenbau, Deduplizierung, Validierung) ist in
-`rue_core.py` gekapselt und ohne GUI testbar:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-## Konfiguration
+## EXE bauen
 
-Beim ersten Start wird eine lokale `config.json` erzeugt (gemerktes Projekt,
-Stempel, Fensterposition, Theme). Diese Datei ist **nicht** im Repo enthalten
-(siehe `.gitignore`), weil sie den Stempel enthält. Als Vorlage dient
-`config.example.json` – bei Bedarf kopieren und anpassen:
-
-```bash
-copy config.example.json config.json
-```
-
-## EXE bauen (moderne Version)
-
-Einmalig auf dem Windows-Rechner (Python 3.10+):
+Einmalig (Python 3.10+ auf dem Windows-Rechner):
 
 ```bash
 pip install customtkinter pyinstaller
@@ -96,23 +82,8 @@ Dann im Repo-Verzeichnis:
 pyinstaller gui_rue_generator_modern.spec
 ```
 
-Das Ergebnis ist **eine einzige Datei ohne Konsolenfenster**:
-`dist\RUE-Generator.exe`. Die Spec bündelt die CustomTkinter-Assets und
-bettet `projekte.json` als Fallback mit ein; eine `projekte.json` neben der
-EXE überschreibt die eingebettete Version.
-
-## EXE bauen (klassische Version)
-
-```bash
-pyinstaller gui_rue_generator_unified.spec
-```
-
-## Bekannte offene Punkte (nur klassische Version)
-
-Diese Punkte sind in der modernen Version behoben:
-
-- `DEFAULT_PROJECT = "90079"` existiert nicht als Schlüssel in `PROJEKTE` –
-  ohne vorhandene `config.json` bleibt die Vorschau zunächst leer.
-- In einigen Projektlisten kommen einzelne Aktionscodes doppelt vor
-  (doppelte Zeilen in der Ausgabe).
-- Exportdateien werden mit `\r\r\n` statt `\r\n` als Zeilenende geschrieben.
+Ergebnis: **`dist\RUE-Generator.exe`** — eine einzige Datei ohne
+Konsolenfenster. Die `projekte.json` ist als Fallback eingebettet; eine
+`projekte.json` **neben der EXE** hat Vorrang (wird auch vom
+CPR-Aktionen-Bereich zum Speichern genutzt), Datenpflege braucht also keinen
+neuen Build.
