@@ -153,9 +153,62 @@ def lade_projekte(pfad: str | Path | None = None) -> ProjektDaten:
     )
 
 
+def speichere_projekte(daten: ProjektDaten,
+                       pfad: str | Path | None = None) -> str | None:
+    """
+    Schreibt die Projektdaten als projekte.json (Ziel: neben EXE/Skript).
+    Rückgabe: None wenn ok, sonst deutsche Fehlermeldung.
+    """
+    p = Path(pfad) if pfad is not None else base_dir() / PROJEKTE_DATEINAME
+    inhalt = {
+        "_hinweis": (
+            "Projektdaten des RUE-Generators. 'zasm' enthaelt pro CPR-Aktion die "
+            "Aktionscodes fuer den ZASM-Tab, 'visev' die Kampagnen-Aktionen fuer den "
+            "ViseV-Tab (7088). Beim Laden werden Duplikate automatisch entfernt. "
+            "Diese Datei kann direkt im Tool (Bereich 'CPR-Aktionen') oder von Hand "
+            "gepflegt werden."
+        ),
+        "zasm": {k: list(v) for k, v in daten.zasm.items()},
+        "visev": {k: list(v) for k, v in daten.visev.items()},
+    }
+    try:
+        tmp = p.with_suffix(".json.tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(inhalt, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        os.replace(tmp, p)
+        return None
+    except OSError as e:
+        return f"Projektdaten konnten nicht gespeichert werden:\n{p}\n{e}"
+
+
 # ---------------------------------------------------------------------------
 # Parsing
 # ---------------------------------------------------------------------------
+
+AKTIONSCODE_RE = re.compile(r"\d{12}")
+
+
+def parse_aktionscodes(text: str) -> list[str]:
+    """
+    Zerlegt Freitext (eine Zeile je Code, auch Komma/Semikolon/Leerzeichen)
+    in Aktionscodes; Duplikate werden entfernt, Reihenfolge bleibt.
+    """
+    tokens = re.split(r"[\s,;]+", text.strip())
+    return dedupe_keep_order([t for t in tokens if t])
+
+
+def validate_aktionscodes(codes: list[str]) -> str | None:
+    """Prüft Aktionscodes (je 12 Ziffern). None wenn ok, sonst Fehlermeldung."""
+    if not codes:
+        return "Mindestens ein Aktionscode wird benötigt."
+    schlecht = [c for c in codes if not AKTIONSCODE_RE.fullmatch(c)]
+    if schlecht:
+        beispiele = ", ".join(schlecht[:5])
+        mehr = f" (und {len(schlecht) - 5} weitere)" if len(schlecht) > 5 else ""
+        return (f"Ungültige Aktionscodes (erwartet: genau 12 Ziffern): "
+                f"{beispiele}{mehr}")
+    return None
 
 def parse_pnrs(text: str, remove_dupes: bool = True) -> list[str]:
     """Extrahiert Ziffernfolgen (PNRs); optional Duplikate entfernen (Reihenfolge bleibt)."""
