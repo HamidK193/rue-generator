@@ -300,6 +300,19 @@ class TestAktionscodes(unittest.TestCase):
     def test_parse_leer(self):
         self.assertEqual(rc.parse_aktionscodes("   \n  "), [])
 
+    def test_parse_excel_spalte(self):
+        """Excel kopiert mit \\r\\n-Zeilenenden und ggf. Leerzeilen am Ende."""
+        excel = "054020250001\r\n054020250002\r\n054020250003\r\n\r\n"
+        self.assertEqual(rc.parse_aktionscodes(excel),
+                         ["054020250001", "054020250002", "054020250003"])
+
+    def test_parse_excel_mehrspaltig_mit_tabs(self):
+        """Zwei markierte Excel-Spalten -> Tab-getrennte Werte je Zeile."""
+        excel = "054020250001\t054020250002\r\n054020250003\t054020250004\r\n"
+        self.assertEqual(rc.parse_aktionscodes(excel),
+                         ["054020250001", "054020250002",
+                          "054020250003", "054020250004"])
+
     def test_validate_ok(self):
         self.assertIsNone(rc.validate_aktionscodes(["054020250001"]))
 
